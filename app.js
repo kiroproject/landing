@@ -57,7 +57,39 @@
     b.addEventListener('click', function () { selectPeriod(+b.getAttribute('data-period')); });
   });
 
-  /* ---------- FAQ-аккордеон ---------- */
+  var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---------- FAQ-аккордеон: плавное открытие и закрытие ---------- */
+  var faqAnim = {};
+  function faqOpen(j) {
+    var a = document.querySelector('[data-faq-a="' + j + '"]');
+    if (!a) return;
+    if (faqAnim[j]) faqAnim[j].cancel();
+    a.hidden = false;
+    if (reduceMotion) return;
+    var h = a.scrollHeight;
+    a.style.overflow = 'hidden';
+    var anim = a.animate(
+      [{ height: '0px', paddingBottom: '0px', opacity: 0 }, { height: h + 'px', paddingBottom: '24px', opacity: 1 }],
+      { duration: 480, easing: 'cubic-bezier(.22,1,.36,1)' }
+    );
+    faqAnim[j] = anim;
+    anim.onfinish = function () { a.style.overflow = ''; faqAnim[j] = null; };
+  }
+  function faqClose(j) {
+    var a = document.querySelector('[data-faq-a="' + j + '"]');
+    if (!a || a.hidden) return;
+    if (faqAnim[j]) faqAnim[j].cancel();
+    if (reduceMotion) { a.hidden = true; return; }
+    var h = a.offsetHeight;
+    a.style.overflow = 'hidden';
+    var anim = a.animate(
+      [{ height: h + 'px', paddingBottom: '24px', opacity: 1 }, { height: '0px', paddingBottom: '0px', opacity: 0 }],
+      { duration: 360, easing: 'cubic-bezier(.65,0,.35,1)' }
+    );
+    faqAnim[j] = anim;
+    anim.onfinish = function () { a.hidden = true; a.style.overflow = ''; faqAnim[j] = null; };
+  }
   $$('[data-faq]').forEach(function (btn) {
     btn.addEventListener('click', function () {
       var i = btn.getAttribute('data-faq');
@@ -68,9 +100,38 @@
         b.setAttribute('aria-expanded', open ? 'true' : 'false');
         var plus = b.querySelector('.plus');
         if (plus) plus.className = open ? 'plus on' : 'plus';
-        var a = document.querySelector('[data-faq-a="' + j + '"]');
-        if (a) a.hidden = !open;
+        if (open) faqOpen(j); else faqClose(j);
       });
+    });
+  });
+
+  /* ---------- Плавная прокрутка к разделам по якорю ---------- */
+  function smoothScrollTo(targetY, duration) {
+    var startY = window.pageYOffset;
+    var distance = targetY - startY;
+    var startTime = null;
+    function step(now) {
+      if (startTime === null) startTime = now;
+      var t = Math.min((now - startTime) / duration, 1);
+      var eased = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+      window.scrollTo({ top: startY + distance * eased, behavior: 'instant' });
+      if (t < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+  $$('a[href^="#"]').forEach(function (link) {
+    link.addEventListener('click', function (e) {
+      var id = link.getAttribute('href');
+      if (id.length < 2) return;
+      var target = document.querySelector(id);
+      if (!target) return;
+      e.preventDefault();
+      var offset = parseFloat(getComputedStyle(target).scrollMarginTop) || 0;
+      var maxY = document.documentElement.scrollHeight - window.innerHeight;
+      var y = Math.max(0, Math.min(target.getBoundingClientRect().top + window.pageYOffset - offset, maxY));
+      history.pushState(null, '', id);
+      if (reduceMotion) window.scrollTo(0, y);
+      else smoothScrollTo(y, 900);
     });
   });
 })();
