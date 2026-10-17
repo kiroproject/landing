@@ -155,4 +155,9 @@ button{font:inherit;cursor:pointer}
 .hero-visual{flex-direction:column;min-height:0!important;padding-top:56px}
 .hero-card{position:relative!important;left:auto!important;bottom:auto!important;margin-top:8px;width:100%!important;max-width:320px}
 .node:not(.on):not(.hub)>span:last-child{display:none}
+.seg-wrap{display:grid!important;grid-template-columns:1fr 1fr;width:100%;border-radius:20px!important}
+.seg{width:100%;padding:10px 12px}
+.cta-card{padding:40px 24px 0!important;gap:8px!important}
+.cta-card>div{order:1}
+.cta-fox{order:2;position:relative!important;right:auto!important;bottom:auto!important;width:200px!important;height:auto!important;margin:0 auto;align-self:center}
 }
